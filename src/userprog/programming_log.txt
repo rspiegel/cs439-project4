@@ -1,0 +1,149 @@
+wednesday 10/7 Ryan, Otis, Gavin - 2.5 hrs
+Otis - 30
+Ryan - 40
+Gavin - 30
+Otis - 20
+Ryan - 25
+Gavin - 35
+
+friday 10/9 Ryan, Otis, Gavin - 5 hrs
+Otis - 30
+Ryan - 30
+Gavin - 30
+Otis - 45
+Ryan - 25
+Gavin - 35
+Otis - 15
+Ryan - 35
+Gavin - 20
+Otis - 35
+
+sunday 10/11 Ryan, Otis, Gavin - 4 hrs
+Otis - 30
+Ryan - 30
+Gavin - 30
+Otis - 30
+Ryan - 30
+Gavin - 30
+Otis - 30
+Ryan - 30
+
+monday 10/12 1:30 - 4:00, gavin, ryan, billy, otis - 2.5hrs
+
+gavin - 30
+ryan - 30
+billy - 30
+otis - 30
+gavin - 30
+
+wednesday 10/14 1:30 - 4:00, gavin, ryan, billy, otis - 2.5hrs
+
+otis - 30
+billy - 30
+ryan - 30
+billy - 30
+gavin - 30
+
+friday 10/16 12:00 - 7:00, gavin, ryan, billy, otis - 7hrs
+
+gavin - 30
+billy - 30
+ryan - 30
+billy - 30
+gavin - 30
+otis - 30
+ryan - 30
+billy - 30
+ryan - 30
+otis - 30
+gavin - 30
+billy - 30
+ryan - 30
+otis - 30
+
+sunday 10/18 12:00 - 6:00, gavin, ryan, billy, otis - 6hrs
+
+ryan - 30
+otis - 30
+billy - 30
+ryan - 30
+gavin - 30
+billy - 30
+otis - 30
+ryan - 30
+gavin - 30
+billy - 30
+otis - 30
+ryan - 30
+
+monday 10/19 1:30 - 4:00, gavin, ryan, billy, otis - 2.5hrs
+
+otis - 30
+billy - 30
+ryan - 30
+gavin - 30
+billy - 30
+
+wednesday 10/21 1:30 - 4:00, gavin, ryan, billy, otis - 2.5hrs
+
+billy - 30
+ryan - 30
+otis - 30
+gavin - 30
+ryan - 30
+
+thursday 10/22 12:00 - 5:00, gavin, ryan, billy, otis - 5hrs
+
+ryan - 30
+billy - 30
+ryan - 30
+otis - 30
+gavin - 30
+billy - 30
+ryan - 30
+otis - 30
+gavin - 30
+
+friday 10/23 11:00 - 7:30, gavin, billy, ryan, otis - 8.5hrs
+
+gavin - 30
+billy - 30
+ryan - 30
+billy - 30
+gavin - 30
+otis - 30
+ryan - 30
+billy - 30
+otis - 30
+ryan - 30
+gavin - 30
+billy - 30
+ryan - 30
+otis - 30
+billy - 30
+ryan - 30
+
+saturday 10/24 12:00 - 4:30, gavin, billy, ryan - 4.5hrs
+
+otis - 30
+ryan - 30
+gavin - 30
+billy - 30
+ryan - 30
+otis - 30
+billy - 30
+ryan - 30
+otis - 30
+
+sunday 10/25 12:00 - 5:00, gavin, billy, otis, ryan - 5hrs
+
+otis - 30
+ryan - 30
+gavin - 30
+billy - 30
+ryan - 30
+otis - 30
+billy - 30
+gavin - 30
+ryan - 30
+otis - 30
