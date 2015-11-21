@@ -16,7 +16,7 @@ struct block
 {
   block_sector_t start;               /* First data sector. */
   off_t length;                       /* File size in bytes. */
-}
+};
 
 struct indirect_first_level
 {
@@ -33,9 +33,13 @@ struct indirect_second_level
 struct inode_disk
   {
     unsigned magic;
+    block_sector_t start;
+    off_t length;
+    struct bitmap bm;
     struct block direct_blocks[10];
     struct indirect_first_level* first_level;
     struct indirect_second_level* second_level;
+
   };
 
 /* Returns the number of sectors to allocate for an inode SIZE
@@ -100,6 +104,7 @@ inode_create (block_sector_t sector, off_t length)
   ASSERT (sizeof *disk_inode == BLOCK_SECTOR_SIZE);
 
   disk_inode = calloc (1, sizeof *disk_inode);
+  bitmap_create(length);
   if (disk_inode != NULL)
     {
       size_t sectors = bytes_to_sectors (length);
@@ -107,6 +112,7 @@ inode_create (block_sector_t sector, off_t length)
       disk_inode->magic = INODE_MAGIC;
       if (free_map_allocate (sectors, &disk_inode->start)) 
         {
+          bitmap_set_multiple(disk_inode->bm, 0, length, true);
           block_write (fs_device, sector, disk_inode);
           if (sectors > 0) 
             {
@@ -118,6 +124,7 @@ inode_create (block_sector_t sector, off_t length)
             }
           success = true; 
         } 
+      bitmap_destroy(disk_inode->bm);
       free (disk_inode);
     }
   return success;
