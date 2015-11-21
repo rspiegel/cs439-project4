@@ -10,14 +10,32 @@
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
 
+#define N_NUMBLOCKS 1024
+
+struct block
+{
+  block_sector_t start;               /* First data sector. */
+  off_t length;                       /* File size in bytes. */
+}
+
+struct indirect_first_level
+{
+  struct block direct_blocks[N_NUMBLOCKS];
+};
+
+struct indirect_second_level
+{
+  struct indirect_first_level* first_level[N_NUMBLOCKS];
+};
+
 /* On-disk inode.
    Must be exactly BLOCK_SECTOR_SIZE bytes long. */
 struct inode_disk
   {
-    block_sector_t start;               /* First data sector. */
-    off_t length;                       /* File size in bytes. */
-    unsigned magic;                     /* Magic number. */
-    uint32_t unused[125];               /* Not used. */
+    unsigned magic;
+    struct block direct_blocks[10];
+    struct indirect_first_level* first_level;
+    struct indirect_second_level* second_level;
   };
 
 /* Returns the number of sectors to allocate for an inode SIZE
@@ -44,7 +62,7 @@ struct inode
    Returns -1 if INODE does not contain data for a byte at offset
    POS. */
 static block_sector_t
-byte_to_sector (const struct inode *inode, off_t pos) 
+byte_to_sector (const struct inode *inode, off_t pos)
 {
   ASSERT (inode != NULL);
   if (pos < inode->data.length)
@@ -188,7 +206,7 @@ inode_close (struct inode *inode)
 /* Marks INODE to be deleted when it is closed by the last caller who
    has it open. */
 void
-inode_remove (struct inode *inode) 
+inode_remove (struct inode *inode)
 {
   ASSERT (inode != NULL);
   inode->removed = true;
