@@ -10,6 +10,16 @@
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
 
+#define MAX_FILE 8388608
+
+#define DIRECT_BLOCKS 10
+#define FIRST_INDIRECT_BLOCKS 1
+#define SECOND_INDIRECT_BLOCKS 1
+
+#define DIRECT_INDEX 0
+#define FIRST_INDIRECT_INDEX 10
+#define SECOND_INDIRECT_INDEX 11
+
 #define N_NUMBLOCKS 1024
 
 struct block
