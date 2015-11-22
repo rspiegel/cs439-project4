@@ -10,6 +10,7 @@
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
 
+//max file size 8MB
 #define MAX_FILE 8388608
 
 #define DIRECT_BLOCKS 10
@@ -19,6 +20,9 @@
 #define DIRECT_INDEX 0
 #define FIRST_INDIRECT_INDEX 10
 #define SECOND_INDIRECT_INDEX 11
+
+#define INODE_POINTERS 14
+#define INDIRECT_POINTERS 128
 
 #define N_NUMBLOCKS 1024
 
@@ -30,7 +34,7 @@ struct block
 
 struct indirect_first_level
 {
-  struct block direct_blocks[N_NUMBLOCKS];
+  block_sector_t ptrs[INDIRECT_POINTERS];
 };
 
 struct indirect_second_level
@@ -46,7 +50,9 @@ struct inode_disk
     block_sector_t start;
     off_t length;
     struct bitmap* bm;
-    struct block direct_blocks[10];
+    block_sector_t parent;
+    bool dir;
+    block_sector_t ptrs[INODE_POINTERS];
     struct indirect_first_level* first_level;
     struct indirect_second_level* second_level;
 
@@ -70,6 +76,13 @@ struct inode
     int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
     struct inode_disk data;             /* Inode content. */
     block_sector_t parent;
+    bool dir;
+    off_t length;                       // length of file
+    off_t read;                         // amount read
+    unsigned direct;                    // index to first direct block
+    unsigned first_indirect;            // index to first indirect
+    unsigned second_indirect;           // index to second indirect
+    block_sector_t ptrs[INODE_POINTERS]; // pointers to data blocks
   };
 
 /* Returns the block device sector that contains byte offset POS
