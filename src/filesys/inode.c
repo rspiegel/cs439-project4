@@ -35,7 +35,7 @@ struct inode_disk
     unsigned magic;
     block_sector_t start;
     off_t length;
-    struct bitmap bm;
+    struct bitmap* bm;
     struct block direct_blocks[10];
     struct indirect_first_level* first_level;
     struct indirect_second_level* second_level;
@@ -59,6 +59,7 @@ struct inode
     bool removed;                       /* True if deleted, false otherwise. */
     int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
     struct inode_disk data;             /* Inode content. */
+    block_sector_t parent;
   };
 
 /* Returns the block device sector that contains byte offset POS
@@ -367,4 +368,9 @@ off_t
 inode_length (const struct inode *inode)
 {
   return inode->data.length;
+}
+
+block_sector_t inode_parent(struct inode* inode)
+{
+  return inode->parent;
 }

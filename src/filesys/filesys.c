@@ -47,14 +47,19 @@ filesys_create (const char *name, off_t initial_size)
 {
   block_sector_t inode_sector = 0;
   struct dir *dir = dir_open_root ();
-  bool success = (dir != NULL
-                  && free_map_allocate (1, &inode_sector)
-                  && inode_create (inode_sector, initial_size)
-                  && dir_add (dir, name, inode_sector));
+  bool success = false;
+  char* file = filesys_get_file(name);
+  if(!strcmp(file, ".") && !strcmp(file, ".."))
+  { 
+    success = (dir != NULL
+                && free_map_allocate (1, &inode_sector)
+                && inode_create (inode_sector, initial_size)
+                && dir_add (dir, name, inode_sector));
+  }
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);
   dir_close (dir);
-
+  free(file);
   return success;
 }
 
@@ -100,4 +105,23 @@ do_format (void)
     PANIC ("root directory creation failed");
   free_map_close ();
   printf ("done.\n");
+}
+
+char* filesys_get_file(const char* file_path)
+{
+  char file_path_copy[strlen(file_path) + 1];
+  strlcpy(file_path_copy, file_path, strlen(file_path) + 1);
+
+  char* ptr;
+  char* token = strtok_r(file_path_copy, "/", &ptr);
+  char* last_token = "";
+  while(token != NULL)
+  {
+    last_token = token;
+    token = strtok_r(NULL, "/", &ptr);
+  }
+
+  char file[strlen(last_token) + 1];
+  strlcpy(file, last_token, strlen(last_token) + 1);
+  return file;
 }

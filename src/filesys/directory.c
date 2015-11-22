@@ -250,12 +250,27 @@ bool dir_root(struct dir* dir)
 
 }
 
-bool dir_parent(struct dir* dir, struct inode* inode)
+bool dir_super(struct inode** inode, struct dir* dir)
 {
-  return false;
+  block_sector_t s = inode_parent(dir_get_inode(dir));
+  *inode = inode_open(s);
+  if(*inode == NULL){
+    return false;
+  }
+  return true;
 }
 
 bool dir_empty(struct inode* inode)
 {
+  struct dir_entry d;
+  off_t read = 0;
+  while(inode_read_at(inode, &d, sizeof d, read) == sizeof d)
+  {
+    read += sizeof d;
+    if(d.in_use)
+    {
+      return false;
+    }
+  }
   return true;
 }
