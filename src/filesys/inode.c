@@ -224,7 +224,9 @@ inode_open (block_sector_t sector)
   inode->direct = id.direct_index;
   inode->first_indirect = id.first_indirect_index;
   inode->second_indirect = id.second_indirect_index;
-  inode->ptrs = id.ptrs;
+  inode->parent = id.parent;
+  inode->dir = id.dir;
+  memcpy(&inode->ptrs, &id.ptrs, INODE_POINTERS*sizeof(block_sector_t));
 
   return inode;
 }
