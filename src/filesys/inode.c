@@ -93,8 +93,32 @@ static block_sector_t
 byte_to_sector (const struct inode *inode, off_t pos)
 {
   ASSERT (inode != NULL);
-  if (pos < inode->data.length)
-    return inode->data.start + pos / BLOCK_SECTOR_SIZE;
+  if (pos < inode->data.length){
+    uint32_t index;
+    uint32_t indirect_ptrs[INDIRECT_POINTERS];
+    if(pos < BLOCK_SECTOR_SIZE * DIRECT_BLOCKS)
+    {
+      return inode->ptrs[pos / BLOCK_SECTOR_SIZE];
+    }
+    else if (pos < BLOCK_SECTOR_SIZE *(DIRECT_BLOCKS + 
+                  FIRST_INDIRECT_BLOCKS * INDIRECT_POINTERS))
+    {
+      pos = pos - BLOCK_SECTOR_SIZE * DIRECT_BLOCKS;
+      index = pos / (BLOCK_SECTOR_SIZE * INDIRECT_POINTERS) + DIRECT_BLOCKS;
+      block_read(fs_device, indirect_ptrs[index], &indirect_ptrs);
+      pos = pos % (BLOCK_SECTOR_SIZE * INDIRECT_POINTERS);
+      return indirect_ptrs[pos / BLOCK_SECTOR_SIZE];
+    }
+    else
+    {
+      block_read(fs_device, inode->ptrs[SECOND_INDIRECT_INDEX], &indirect_ptrs);
+      pos = pos - BLOCK_SECTOR_SIZE * (DIRECT_BLOCKS + INDIRECT_POINTERS * FIRST_INDIRECT_BLOCKS);
+      index = pos / (BLOCK_SECTOR_SIZE * INDIRECT_POINTERS);
+      block_read(fs_device, indirect_ptrs[index], &indirect_ptrs);
+      pos = pos % (BLOCK_SECTOR_SIZE * INDIRECT_POINTERS);
+      return indirect_ptrs[pos / BLOCK_SECTOR_SIZE];
+    }
+  }
   else
     return -1;
 }
@@ -128,7 +152,7 @@ inode_create (block_sector_t sector, off_t length)
   ASSERT (sizeof *disk_inode == BLOCK_SECTOR_SIZE);
 
   disk_inode = calloc (1, sizeof *disk_inode);
-  bitmap_create(length);
+  // bitmap_create(length);
   if (disk_inode != NULL)
     {
       size_t sectors = bytes_to_sectors (length);
@@ -136,7 +160,7 @@ inode_create (block_sector_t sector, off_t length)
       disk_inode->magic = INODE_MAGIC;
       if (free_map_allocate (sectors, &disk_inode->start)) 
         {
-          bitmap_set_multiple(disk_inode->bm, 0, length, true);
+          // bitmap_set_multiple(disk_inode->bm, 0, length, true);
           block_write (fs_device, sector, disk_inode);
           if (sectors > 0) 
             {
