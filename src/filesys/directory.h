@@ -30,5 +30,5 @@ bool dir_readdir (struct dir *, char name[NAME_MAX + 1]);
 //New Functions
 bool dir_empty(struct inode* inode);
 bool dir_root(struct dir* dir);
-bool dir_parent(struct inode* inode, struct dir* dir);
+bool dir_super(struct inode** inode, struct dir* dir);
 #endif /* filesys/directory.h */

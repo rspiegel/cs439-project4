@@ -3,9 +3,11 @@
 #include <debug.h>
 #include <round.h>
 #include <string.h>
+#include <stdio.h>
 #include "filesys/filesys.h"
 #include "filesys/free-map.h"
 #include "threads/malloc.h"
+#include "kernel/bitmap.h"
 
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
@@ -53,8 +55,12 @@ struct inode_disk
     block_sector_t parent;
     bool dir;
     block_sector_t ptrs[INODE_POINTERS];
-    struct indirect_first_level* first_level;
-    struct indirect_second_level* second_level;
+    uint32_t unsed_btyes[105];
+    uint32_t direct_index;
+    uint32_t first_indirect_index;
+    uint32_t second_indirect_index;
+    // struct indirect_first_level* first_level;
+    // struct indirect_second_level* second_level;
 
   };
 
@@ -140,9 +146,10 @@ inode_init (void)
    Returns true if successful.
    Returns false if memory or disk allocation fails. */
 bool
-inode_create (block_sector_t sector, off_t length)
+inode_create (block_sector_t sector, off_t length, bool dir)
 {
   struct inode_disk *disk_inode = NULL;
+  printf("\n\n%d\n\n\n", sizeof (struct inode_disk));
   bool success = false;
 
   ASSERT (length >= 0);
@@ -210,7 +217,15 @@ inode_open (block_sector_t sector)
   inode->open_cnt = 1;
   inode->deny_write_cnt = 0;
   inode->removed = false;
-  block_read (fs_device, inode->sector, &inode->data);
+  struct inode_disk id;
+  block_read (fs_device, inode->sector, &id);
+  inode->length = id.length;
+  inode->read = id.length;
+  inode->direct = id.direct_index;
+  inode->first_indirect = id.first_indirect_index;
+  inode->second_indirect = id.second_indirect_index;
+  inode->ptrs = id.ptrs;
+
   return inode;
 }
 
