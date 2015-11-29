@@ -440,7 +440,7 @@ bool inode_new(struct inode_disk* inode)
   struct inode new_inode;
   
   inode->direct_index = 0;
-  inode->indirect = 0;
+  inode->first_indirect = 0;
   inode->second_indirect = 0;
   memcpy(&inode->ptr, &new_inode.ptr, INODE_POINTERS * sizeof(block_sector_t));
   return true;
