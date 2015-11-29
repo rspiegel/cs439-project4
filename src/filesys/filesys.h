@@ -18,6 +18,8 @@ struct file *filesys_open (const char *name);
 bool filesys_remove (const char *name);
 
 //New Functions
-char* filesys_get_file(const char* file_path);
+char* filesys_get_dir(const char*);
+bool filesys_change_dir(const char*);
+char* filesys_get_file(const char*);
 
 #endif /* filesys/filesys.h */

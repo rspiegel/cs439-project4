@@ -6,6 +6,8 @@
 #include "filesys/free-map.h"
 #include "filesys/inode.h"
 #include "filesys/directory.h"
+#include "threads/thread.h"
+#include "threads/malloc.h"
 
 /* Partition that contains the file system. */
 struct block *fs_device;
@@ -121,7 +123,104 @@ char* filesys_get_file(const char* file_path)
     token = strtok_r(NULL, "/", &ptr);
   }
 
-  char file[strlen(last_token) + 1];
+  char* file[strlen(last_token) + 1];
   strlcpy(file, last_token, strlen(last_token) + 1);
   return file;
+}
+
+bool filesys_change_dir(const char* dir_name)
+{
+  struct dir* dir = filesys_get_dir(dir_name);
+  char* file_name = filesys_get_file(dir_name);
+  struct inode* inode = NULL;
+
+  if(dir != NULL)
+  {
+    if(strcmp(file_name, "..") == 0)
+    {
+      if(!dir_super(&inode, dir))
+      {
+        free(file_name);
+        return false;
+      }
+    }
+    else if((dir_root(dir) && strlen(file_name) == 0) || strcmp(file_name, ".") == 0)
+    {
+      thread_current()->current_dir = dir;
+      free(file_name);
+      return true;
+    }
+    else
+    {
+      dir_lookup(dir, file_name, &inode);
+    }
+  }
+  dir_close(dir);
+  free(file_name);
+  dir = dir_open(inode);
+  if(dir)
+  {
+    dir_close(thread_current()->current_dir);
+    thread_current()->current_dir = dir;
+    return true;
+  }
+  return false;
+}
+
+char* filesys_get_dir(const char* file_path)
+{
+  char str[strlen(file_path) + 1];
+  memcpy(str, file_path, strlen(file_path) + 1);
+
+  char* ptr;
+  char* next = NULL;
+  char* token = strtok_r(str, "/", &ptr);
+
+  struct dir* dir;
+  if(s[0] == '/' && !thread_current()->current_dir)
+  {
+    dir = dir_open_root();
+  }
+  else
+  {
+    dir = dir_reopen(thread_current()->current_dir);
+  }
+
+  if(token)
+  {
+    next = strkot_r(NULL, "/", &ptr);
+  }
+  while(next != NULL)
+  {
+    if(strcmp(token, ".") != 0)
+    {
+      struct inode* inode;
+      if(strcmp(token, "..") == 0)
+      {
+        if(!dir_super(&inode, dir))
+        {
+          return NULL;
+        }
+      }
+      else
+      {
+        if(!dir_lookup(dir, token, &inode))
+        {
+          return NULL;
+        }
+      }
+      if(inode_dir(&inode))
+      {
+        dir_close(dir);
+        dir = dir_open(inode);
+      }
+      else
+      {
+        inode_close(inode);
+      }
+    }
+    toekn = next;
+    next = strtok_r(NULL, "/", &ptr);
+  }
+  return dir;
 }

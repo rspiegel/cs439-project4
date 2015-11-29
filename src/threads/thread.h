@@ -103,6 +103,7 @@ struct thread
     struct file* file;
     struct thread* parent;              // parent of thread
     bool child_load_success;            // checks for successful load of child
+    struct dir* current_dir;            // current word directory of thread
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
