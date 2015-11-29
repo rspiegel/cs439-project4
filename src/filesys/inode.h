@@ -24,5 +24,5 @@ off_t inode_length (const struct inode *);
 block_sector_t inode_parent(struct inode* inode);
 bool inode_new(struct inode_disk*);
 off_t inode_build(struct inode*, off_t);
-
+off_t indoe_build_indirect(struct inode*, unsigned);
 #endif /* filesys/inode.h */

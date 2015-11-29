@@ -103,7 +103,7 @@ byte_to_sector (const struct inode *inode, off_t pos)
     uint32_t index;
     uint32_t indirect_ptrs[INDIRECT_POINTERS];
     if(pos < BLOCK_SECTOR_SIZE * DIRECT_BLOCKS)
-    {
+    { 
       return inode->ptrs[pos / BLOCK_SECTOR_SIZE];
     }
     else if (pos < BLOCK_SECTOR_SIZE *(DIRECT_BLOCKS + 
@@ -494,5 +494,70 @@ unsigned inode_build_indirect(struct inode* inode, unsigned sectors)
   {
     block_read(fs_device, inode->ptrs[inode->direct], zeros);
   }
-  while(inode->indirect)
+  while(inode->indirect < INDIRECT_POINTERS)
+  {
+    free_map_allocate(1, &fl_blocks.ptrs[inode->first_indirect]);
+    block_write(fs_device, fl_blocks.ptrs[inode->first_indirect], zeros);
+    inode->indirect += 1;
+    sectors -= 1;
+    if(sectors == 0)
+    {
+      break;
+    }
+  }
+  block_write(fs_device, inode->ptrs[inode->direct], &fl_blocks);
+  if(inode->indirect == INDIRECT_POINTERS)
+  {
+    inode->first_indirect = 0;
+    inode->direct += 1;
+  }
+}
+
+unsigned inode_build_second_indirect(struct inode* inode, unsigned sectors)
+{
+  struct indirect_first_level sl_blocks;
+  if(inode->second_indirect == 0 && inode->indirect == 0)
+  {
+    free_map_allocate(1, &inode->ptrs[inode->direct]);
+  }
+  else
+  {
+    block_read(fs_device, inode->ptrs[inode->direct], &sl_blocks);
+  }
+  while(inode->indirect < INDIRECT_POINTERS)
+  {
+    static char zeros[BLOCK_SECTOR_SIZE];
+    struct  indirect_first_level fl_blocks;
+    if(inode->second_indirect == 0)
+    {
+      free_map_allocate(1, &sl_blocks.ptrs[inode->indirect]);
+    }
+    else
+    {
+      block_read(fs_device, sl_blocks->ptrs[inode->indirect], &fl_blocks);
+    }
+    while(inode->second_indirect < INDIRECT_POINTERS)
+    {
+      free_map_allocate(1, sl_blocks.ptrs[inode->second_indirect]);
+      block_write(fs_device, sl_blocks.ptrs[inode->second_indirect], zeros);
+      inode->second_indirect += 1;
+      sectors -= 1;
+      if(sectors == 0)
+      {
+        break;
+      }
+    }
+    block_write(fs_device, sl_blocks.ptrs[inode->indirect], &sl_blocks);
+    if(inode->second_indirect == INDIRECT_POINTERS)
+    {
+      inode->second_indirect = 0;
+      inode->indirect += 1;
+    }
+    if(sectors == 0)
+    {
+      break;
+    }
+  }
+  block_write(fs_device, inode->ptrs[inode->direct], &sl_blocks);
+  return sectors;
 }
