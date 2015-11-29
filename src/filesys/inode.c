@@ -158,28 +158,26 @@ inode_create (block_sector_t sector, off_t length, bool dir)
   ASSERT (sizeof *disk_inode == BLOCK_SECTOR_SIZE);
 
   disk_inode = calloc (1, sizeof *disk_inode);
-  // bitmap_create(length);
   if (disk_inode != NULL)
+  {
+    if(length > MAX_FILE)
     {
-      size_t sectors = byte_to_sector (length);
-      disk_inode->length = length;
-      disk_inode->magic = INODE_MAGIC;
-      disk_indoe->dir = dir;
-      disk_inode->parent = ROOT_DIR_SECTOR;
-      if(inode_alloc)
-          block_write (fs_device, sector, disk_inode);
-          if (sectors > 0) 
-            {
-              static char zeros[BLOCK_SECTOR_SIZE];
-              size_t i;
-              
-              for (i = 0; i < sectors; i++) 
-                block_write (fs_device, disk_inode->start + i, zeros);
-            }
-          success = true; 
-        } 
-           free (disk_inode);
+      disk_inode->length = MAX_FILE;
     }
+    else
+    {
+      disk_inode->length = length;
+    }
+    disk_inode->magic = INODE_MAGIC;
+    disk_indoe->dir = dir;
+    disk_inode->parent = ROOT_DIR_SECTOR;
+    if(inode_alloc(disk_inode))
+    }
+      block_write (fs_device, sector, disk_inode);
+      success = true; 
+    } 
+    free (disk_inode);
+  }
   return success;
 }
 
