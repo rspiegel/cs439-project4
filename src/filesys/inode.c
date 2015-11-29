@@ -516,7 +516,7 @@ unsigned inode_build_indirect(struct inode* inode, unsigned sectors)
 unsigned inode_build_second_indirect(struct inode* inode, unsigned sectors)
 {
   struct indirect_first_level sl_blocks;
-  if(inode->second_indirect == 0 && inode->indirect == 0)
+  if(inode->second_indirect == 0 && inode->first_indirect == 0)
   {
     free_map_allocate(1, &inode->ptrs[inode->direct]);
   }
@@ -530,11 +530,11 @@ unsigned inode_build_second_indirect(struct inode* inode, unsigned sectors)
     struct  indirect_first_level fl_blocks;
     if(inode->second_indirect == 0)
     {
-      free_map_allocate(1, &sl_blocks.ptrs[inode->indirect]);
+      free_map_allocate(1, &sl_blocks.ptrs[inode->first_indirect]);
     }
     else
     {
-      block_read(fs_device, sl_blocks->ptrs[inode->indirect], &fl_blocks);
+      block_read(fs_device, sl_blocks.ptrs[inode->indirect], &fl_blocks);
     }
     while(inode->second_indirect < INDIRECT_POINTERS)
     {
@@ -547,11 +547,11 @@ unsigned inode_build_second_indirect(struct inode* inode, unsigned sectors)
         break;
       }
     }
-    block_write(fs_device, sl_blocks.ptrs[inode->indirect], &sl_blocks);
+    block_write(fs_device, sl_blocks.ptrs[inode->first_indirect], &sl_blocks);
     if(inode->second_indirect == INDIRECT_POINTERS)
     {
       inode->second_indirect = 0;
-      inode->indirect += 1;
+      inode->first_indirect += 1;
     }
     if(sectors == 0)
     {
