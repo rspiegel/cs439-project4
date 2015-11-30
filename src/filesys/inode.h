@@ -25,4 +25,5 @@ block_sector_t inode_parent(struct inode* inode);
 off_t inode_build(struct inode*, off_t);
 off_t inode_build_indirect(struct inode*, unsigned);
 off_t inode_build_second_indirect(struct inode* inode, unsigned sectors);
+bool inode_dir(const struct inode*);
 #endif /* filesys/inode.h */
