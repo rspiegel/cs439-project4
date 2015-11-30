@@ -177,7 +177,7 @@ char* filesys_get_dir(const char* file_path)
   char* token = strtok_r(str, "/", &ptr);
 
   struct dir* dir;
-  if(s[0] == '/' && !thread_current()->current_dir)
+  if(str[0] == '/' && !thread_current()->current_dir)
   {
     dir = dir_open_root();
   }
@@ -188,7 +188,7 @@ char* filesys_get_dir(const char* file_path)
 
   if(token)
   {
-    next = strkot_r(NULL, "/", &ptr);
+    next = strtok_r(NULL, "/", &ptr);
   }
   while(next != NULL)
   {
@@ -219,7 +219,7 @@ char* filesys_get_dir(const char* file_path)
         inode_close(inode);
       }
     }
-    toekn = next;
+    token = next;
     next = strtok_r(NULL, "/", &ptr);
   }
   return dir;
