@@ -53,10 +53,10 @@ filesys_create (const char *name, off_t initial_size)
   char* file = filesys_get_file(name);
   if(!strcmp(file, ".") && !strcmp(file, ".."))
   { 
-    success = (dir != NULL
-                && free_map_allocate (1, &inode_sector)
-                && inode_create (inode_sector, initial_size, false)
-                && dir_add (dir, name, inode_sector));
+    success = (dir != NULL);
+    success &= free_map_allocate (1, &inode_sector);
+    success &= inode_create (inode_sector, initial_size, false);
+    success &= dir_add (dir, name, inode_sector);
   }
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);

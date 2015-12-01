@@ -44,22 +44,21 @@ struct indirect_second_level
 };
 */
 
+
 /* On-disk inode.
    Must be exactly BLOCK_SECTOR_SIZE bytes long. */
 struct inode_disk
-  {
-    unsigned magic;
-    block_sector_t start;
-    off_t length;
-    //struct bitmap* bm; // can't use pointers in this struct
-    block_sector_t parent;
-    bool dir;
-    block_sector_t ptrs[INODE_POINTERS];
-    block_sector_t first_level_sector; //struct indirect_first_level *first_level;
-    block_sector_t second_level_sector; //struct indirect_second_level *second_level;
-    uint32_t unsed_btyes[106];
-
-  };
+{
+  unsigned magic;
+  block_sector_t start;
+  off_t length;
+  block_sector_t parent;
+  bool dir;
+  block_sector_t ptrs[DIRECT_BLOCKS];
+  block_sector_t first_level_sector;  //pointer to indirect_first_level
+  block_sector_t second_level_sector; //pointer tp indirect_second_level
+  uint32_t unsed_btyes[111];
+};
 
 struct inode *inode_new(struct inode_disk *);
 
@@ -73,18 +72,18 @@ bytes_to_sectors (off_t size)
 
 /* In-memory inode. */
 struct inode 
-  {
-    struct list_elem elem;              /* Element in inode list. */
-    block_sector_t sector;              /* Sector number of disk location. */
-    int open_cnt;                       /* Number of openers. */
-    bool removed;                       /* True if deleted, false otherwise. */
-    int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
-    struct inode_disk data;             /* Inode content. */
-    block_sector_t parent;
-    bool dir;
-    off_t length;                       // length of file
-    off_t read;                         // amount read
-  };
+{
+  struct list_elem elem;              /* Element in inode list. */
+  block_sector_t sector;              /* Sector number of disk location. */
+  int open_cnt;                       /* Number of openers. */
+  bool removed;                       /* True if deleted, false otherwise. */
+  int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
+  struct inode_disk data;             /* Inode content. */
+  block_sector_t parent;
+  bool dir;
+  off_t length;                       // length of file
+  off_t read;                         // amount read
+};
 
 /* Returns the block device sector that contains byte offset POS
    within INODE.
@@ -95,9 +94,9 @@ byte_to_sector (const struct inode *inode, off_t length, off_t pos)
 {
   ASSERT (inode != NULL);
   char buf[BLOCK_SECTOR_SIZE];
-  block_read(fs_device, inode->data.ptrs[i], buf);
+  // block_read(fs_device, inode->data.ptrs[i], buf);
 
-  // printf("a%d\na%d\n",length,pos);
+  printf("\nlength: %d\npos: %d\n", length, pos);
   if (pos < length)
   {
     // ASSERT(0);
@@ -124,7 +123,10 @@ byte_to_sector (const struct inode *inode, off_t length, off_t pos)
     }
   }
   else
+  {
+    // ASSERT(0);
     return -1;
+  }
 }
 
 /* List of open inodes, so that opening a single inode twice
@@ -183,6 +185,7 @@ inode_create (block_sector_t sector, off_t length, bool dir)
       free(disk_inode);
       success = false;
     }
+
   }
   return success;
 }
@@ -193,13 +196,12 @@ inode_create (block_sector_t sector, off_t length, bool dir)
 struct inode *
 inode_open (block_sector_t sector)
 {
-
   /*
   Gavin 5:01 11/30/15 --- 
-    in the function description as well as the header, 
-    it is suggested that SECTOR contians inodes, rather 
+    In the function description as well as the header, 
+    it is suggested that SECTOR contains inodes, rather 
     than disc_inodes. If this is the case, it would lead 
-    me to blieve that the block_write in inode_create 
+    me to believe that the block_write in inode_create 
     would need to write inode_new rather than inode.
   */
   struct list_elem *e;
@@ -218,9 +220,9 @@ inode_open (block_sector_t sector)
     }
 
   /* Allocate memory. */
-  inode = malloc (sizeof *inode);
-  if (inode == NULL)
-    return NULL;
+  // inode = malloc (sizeof *inode);
+  // if (inode == NULL)
+  //   return NULL;
 
   /* Initialize. */
   list_push_front (&open_inodes, &inode->elem);
@@ -366,23 +368,12 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   if (inode->deny_write_cnt)
     return 0;
 
-  // if(offset+ size > inode_length(inode))
-  // {
-  //   if(!inode->dir)
-  //   {
-  //     //add lock
-  //   }
-  //   inode->length = inode_build(inode, offset + size);
-  //   if(!inode->dir)
-  //   {
-  //     //add lock
-  //   }
-  // }
   while (size > 0) 
   {
     // printf("size: %d\n",size);
     /* Sector to write, starting byte offset within sector. */
     block_sector_t sector_idx = byte_to_sector (inode, inode_length(inode),  offset);
+    printf("sector_idx in write_at: \t%d\ninode_length: \t\t\t%d\n\n\n", sector_idx, inode_length(inode));
     int sector_ofs = offset % BLOCK_SECTOR_SIZE;
 
     /* Bytes left in inode, bytes left in sector, lesser of the two. */
@@ -406,11 +397,11 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
       {
         /* We need a bounce buffer. */
         if (bounce == NULL) 
-          {
-            bounce = malloc (BLOCK_SECTOR_SIZE);
-            if (bounce == NULL)
-              break;
-          }
+        {
+          bounce = malloc (BLOCK_SECTOR_SIZE);
+          if (bounce == NULL)
+            break;
+        }
 
          // If the sector contains data before or after the chunk
          //   we're writing, then we need to read in the sector
@@ -480,9 +471,13 @@ inode_build(struct inode* inode, off_t length)
 {
   char zeros[BLOCK_SECTOR_SIZE];
   int i = 0; 
-  while (i < BLOCK_SECTOR_SIZE) zeros[i++] = 0;
+  while (i < BLOCK_SECTOR_SIZE) 
+  {
+    zeros[i++] = 0;
+  }
 
-  size_t sectors = bytes_to_sectors(length);
+  int sectors = (int)bytes_to_sectors(length);
+  // printf("length: %d\nsectors: %d\n", length, sectors);
   ASSERT(sectors); // sectors should never be zero
 
   for (i = 0; i < DIRECT_BLOCKS; i++)
@@ -491,13 +486,14 @@ inode_build(struct inode* inode, off_t length)
     block_write(fs_device, inode->data.ptrs[i], zeros);
     sectors--;
   }
-
+  // printf("length: %d\nsectors: %d\n", length, sectors);
   if (sectors <= 0) 
   {
     return length;
   }
   else // if sectors remaining, move on to first_level
   {
+  // ASSERT(0);
     sectors = inode_build_indirect(inode, sectors);
   }
   if (sectors <= 0) 
@@ -523,15 +519,23 @@ inode_build_indirect(struct inode* inode, unsigned sectors)
 {
   char zeros[BLOCK_SECTOR_SIZE];
   int i = 0; 
-  while (i < BLOCK_SECTOR_SIZE) zeros[i++] = 0;
+  while (i < BLOCK_SECTOR_SIZE)
+  {
+    zeros[i++] = 0;
+  }
 
+  free_map_allocate(1, &inode->data.first_level_sector);
+  block_sector_t block_buf[N_NUMBLOCKS];
+  //printf("%d\n", inode->data.first_level_sector);
   for (i = 0; i < N_NUMBLOCKS; i++)
   {
-    free_map_allocate(1, &inode->data.first_level_sector);
-    // this feels right? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    block_write(fs_device, inode->data.first_level_sector, zeros);
+    block_sector_t temp_block;
+    free_map_allocate(1, &temp_block);
+    block_write(fs_device, &temp_block, zeros);
+    block_buf[i] = temp_block;
     sectors--;
   }
+  block_write(fs_device, &inode->data.first_level_sector, block_buf);
   return sectors;
 }
 
@@ -539,20 +543,31 @@ off_t
 inode_build_second_indirect(struct inode* inode, unsigned sectors)
 {
   char zeros[BLOCK_SECTOR_SIZE];
-  int i = 0; 
-  int j = 0;
-  while (i < BLOCK_SECTOR_SIZE) zeros[i++] = 0;
+  int i, j;
+  i = 0;
+  while (i < BLOCK_SECTOR_SIZE) 
+  {
+    zeros[i++] = 0;
+  }
 
+  free_map_allocate(1, &inode->data.second_level_sector);
+  block_sector_t first_level_buf[N_NUMBLOCKS];
+  //printf("%d\n", inode->data.second_level_sector);
   for (i = 0; i < N_NUMBLOCKS; i++)
   {
+    free_map_allocate(1, &first_level_buf[i]);
+    block_sector_t block_buf[N_NUMBLOCKS];
     for (j = 0; j < N_NUMBLOCKS; j++)
     {
-      free_map_allocate(1, &inode->data.second_level_sector);
-      // this isn't right //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      block_write(fs_device, inode->data.second_level_sector, zeros);
+      block_sector_t temp_block;
+      free_map_allocate(1, &temp_block);
+      block_write(fs_device, &temp_block, zeros);
+      block_buf[j] = temp_block;
       sectors--;
     }
+    block_write(fs_device, &first_level_buf[i], block_buf);
   }
+  block_write(fs_device, &inode->data.second_level_sector, first_level_buf);
   return sectors;
 }
 

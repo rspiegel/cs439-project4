@@ -11,7 +11,7 @@ static int readcount;
 
 void
 syscall_init (void) 
-{
+{  
   //otis driving
   sema_init(&mutex, 1);
   readcount=0;
