@@ -26,11 +26,11 @@
 
 #define N_NUMBLOCKS 128
 
-
+/*
 struct block
 {
-  block_sector_t start;               /* First data sector. */
-  off_t length;                       /* File size in bytes. */
+  block_sector_t start;               
+  off_t length;                       
 };
 
 struct indirect_first_level
@@ -40,8 +40,9 @@ struct indirect_first_level
 
 struct indirect_second_level
 {
-  struct indirect_first_level* first_level[N_NUMBLOCKS];
+  struct indirect_first_level first_level[N_NUMBLOCKS];
 };
+*/
 
 /* On-disk inode.
    Must be exactly BLOCK_SECTOR_SIZE bytes long. */
@@ -50,12 +51,12 @@ struct inode_disk
     unsigned magic;
     block_sector_t start;
     off_t length;
-    struct bitmap* bm;
+    //struct bitmap* bm; // can't use pointers in this struct
     block_sector_t parent;
     bool dir;
     block_sector_t ptrs[INODE_POINTERS];
-    struct indirect_first_level* first_level;
-    struct indirect_second_level* second_level;
+    block_sector_t first_level_sector; //struct indirect_first_level *first_level;
+    block_sector_t second_level_sector; //struct indirect_second_level *second_level;
     uint32_t unsed_btyes[106];
 
   };
@@ -93,6 +94,9 @@ static block_sector_t
 byte_to_sector (const struct inode *inode, off_t length, off_t pos)
 {
   ASSERT (inode != NULL);
+  char buf[BLOCK_SECTOR_SIZE];
+  block_read(fs_device, inode->data.ptrs[i], buf);
+
   // printf("a%d\na%d\n",length,pos);
   if (pos < length)
   {
@@ -108,7 +112,7 @@ byte_to_sector (const struct inode *inode, off_t length, off_t pos)
     {
       pos = pos - (BLOCK_SECTOR_SIZE * DIRECT_BLOCKS); // get position in first_level
       index = pos / BLOCK_SECTOR_SIZE; // index is position / block_size
-      return inode->data.first_level->ptrs[index];
+      //return inode->data.first_level.ptrs[index]; ////////////////////////////////////////////////////////////////////// no idea 
     }
     else
     {
@@ -116,7 +120,7 @@ byte_to_sector (const struct inode *inode, off_t length, off_t pos)
       index = pos / BLOCK_SECTOR_SIZE;
       index_sec1 = index / N_NUMBLOCKS; // which first_level to index into
       index_sec = index % N_NUMBLOCKS;  // what index in that first_level array
-      return inode->data.second_level->first_level[index_sec1]->ptrs[index_sec];
+      //return inode->data.second_level.first_level[index_sec1].ptrs[index_sec]; ////////////////////////////////////////// no idea
     }
   }
   else
@@ -523,8 +527,9 @@ inode_build_indirect(struct inode* inode, unsigned sectors)
 
   for (i = 0; i < N_NUMBLOCKS; i++)
   {
-    free_map_allocate(1, &inode->data.first_level->ptrs[i]);
-    block_write(fs_device, inode->data.first_level->ptrs[i], zeros);
+    free_map_allocate(1, &inode->data.first_level_sector);
+    // this feels right? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    block_write(fs_device, inode->data.first_level_sector, zeros);
     sectors--;
   }
   return sectors;
@@ -542,8 +547,9 @@ inode_build_second_indirect(struct inode* inode, unsigned sectors)
   {
     for (j = 0; j < N_NUMBLOCKS; j++)
     {
-      free_map_allocate(1, &inode->data.second_level->first_level[i]->ptrs[j]);
-      block_write(fs_device, inode->data.second_level->first_level[i]->ptrs[j], zeros);
+      free_map_allocate(1, &inode->data.second_level_sector);
+      // this isn't right //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      block_write(fs_device, inode->data.second_level_sector, zeros);
       sectors--;
     }
   }
