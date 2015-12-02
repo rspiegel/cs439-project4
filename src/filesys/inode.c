@@ -517,7 +517,7 @@ inode_build(struct inode* inode, off_t length)
 off_t 
 inode_build_indirect(struct inode* inode, unsigned sectors)
 {
-  char zeros[BLOCK_SECTOR_SIZE];
+  char zeros[BLOCK_SECTOR_SIZE] = {0};
   int i = 0; 
   while (i < BLOCK_SECTOR_SIZE)
   {
