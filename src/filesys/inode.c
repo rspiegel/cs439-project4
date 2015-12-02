@@ -111,7 +111,10 @@ byte_to_sector (const struct inode *inode, off_t length, off_t pos)
     {
       pos = pos - (BLOCK_SECTOR_SIZE * DIRECT_BLOCKS); // get position in first_level
       index = pos / BLOCK_SECTOR_SIZE; // index is position / block_size
-      //return inode->data.first_level.ptrs[index]; ////////////////////////////////////////////////////////////////////// no idea 
+      block_sector_t buffer[BLOCK_SECTOR_SIZE/sizeof (block_sector_t)];
+      memset(buffer,0,BLOCK_SECTOR_SIZE);
+      block_read(fs_device,inode->data.first_level_sector,buffer);
+      return buffer[index];
     }
     else
     {
@@ -119,7 +122,15 @@ byte_to_sector (const struct inode *inode, off_t length, off_t pos)
       index = pos / BLOCK_SECTOR_SIZE;
       index_sec1 = index / N_NUMBLOCKS; // which first_level to index into
       index_sec = index % N_NUMBLOCKS;  // what index in that first_level array
-      //return inode->data.second_level.first_level[index_sec1].ptrs[index_sec]; ////////////////////////////////////////// no idea
+
+      block_sector_t second_buffer[BLOCK_SECTOR_SIZE/sizeof (block_sector_t)];
+      memset(second_buffer,0,BLOCK_SECTOR_SIZE);
+      block_read(fs_device,inode->data.second_level_sector,second_buffer);
+
+      block_sector_t buffer[BLOCK_SECTOR_SIZE/sizeof (block_sector_t)];
+      memset(buffer,0,BLOCK_SECTOR_SIZE);
+      block_read(fs_device,second_buffer[index_sec1],buffer);
+      return buffer[index_sec];
     }
   }
   else
