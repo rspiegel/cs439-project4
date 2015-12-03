@@ -57,7 +57,7 @@ elem_cnt (size_t bit_cnt)
 static inline size_t
 byte_cnt (size_t bit_cnt)
 {
-  printf("\nin byte_cnt...\nelem_type size: %d\nelem_cnt: %d\n\n", sizeof(elem_type), elem_cnt(bit_cnt));
+  // printf("\nin byte_cnt...\nelem_type size: %d\nelem_cnt: %d\n\n", sizeof(elem_type), elem_cnt(bit_cnt));
   return sizeof (elem_type) * elem_cnt (bit_cnt);
 }
 
@@ -358,10 +358,11 @@ bool
 bitmap_write (const struct bitmap *b, struct file *file)
 {
   off_t size = byte_cnt (b->bit_cnt);
-  printf("in bitmap_write...\nb->bit_cnt: %d\nsize: %d\n\n", b->bit_cnt, size);
+  // printf("in bitmap_write...\nb->bit_cnt: %d\nsize: %d\n", b->bit_cnt, size);
+  // printf("file->inode length: %d\n\n", inode_length(file_get_inode(file)));
   off_t fwa_temp = file_write_at (file, b->bits, size, 0);
+  // printf("fwa_temp: %d\n\n\n", fwa_temp);
   bool fwa = fwa_temp == size;
-  printf("fwa_temp: %d\n\n\n", fwa_temp);
   return fwa;
 }
 #endif /* FILESYS */
