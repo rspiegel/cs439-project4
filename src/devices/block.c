@@ -138,6 +138,7 @@ block_write (struct block *block, block_sector_t sector, const void *buffer)
   ASSERT (block->type != BLOCK_FOREIGN);
   block->ops->write (block->aux, sector, buffer);
   block->write_cnt++;
+  printf("BLOCK WRITE!!!\n");
 }
 
 /* Returns the number of sectors in BLOCK. */
