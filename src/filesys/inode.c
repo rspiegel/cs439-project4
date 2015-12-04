@@ -520,7 +520,6 @@ inode_new(struct inode_disk *inode_d, struct inode* inode)
     new_inode = malloc(sizeof(*new_inode));
     new_inode->data = *inode_d;
     new_inode->data.length = inode_build(new_inode,inode_d->length);
-    // printf("inside inode_new...\ndata.length: %d\n\n", new_inode->data.length);
     return new_inode;
   }
   else
@@ -543,10 +542,7 @@ inode_build(struct inode* inode, off_t length)
   }
 
   int sectors = (int)bytes_to_sectors(length);
-  // printf("length: %d\nsectors: %d\n", length, sectors);
-  ASSERT(sectors); // sectors should never be zero
-
-  // printf("in inode_build \nsectors: %d\nlength: %d\n", sectors, length);
+  //ASSERT(sectors); // sectors should never be zero
 
   for (i = 0; i < DIRECT_BLOCKS && sectors > 0; i++)
   {
@@ -558,7 +554,6 @@ inode_build(struct inode* inode, off_t length)
   // printf("length: %d\nsectors: %d\n", length, sectors);
   if (sectors <= 0) 
   {
-    // printf("exiting inode_build \nsectors: %d\nlength: %d\n", sectors, length);
     return length;
   }
   else // if sectors remaining, move on to first_level
@@ -568,7 +563,6 @@ inode_build(struct inode* inode, off_t length)
   }
   if (sectors <= 0) 
   {
-    // printf("exiting inode_build \nsectors: %d\nlength: %d\n", sectors, length);
     return length;
   }
   else // if sectors remaining, move on to second_level
@@ -577,12 +571,10 @@ inode_build(struct inode* inode, off_t length)
   }
   if (sectors <= 0) 
   {
-    // printf("exiting inode_build \nsectors: %d\nlength: %d\n", sectors, length);
     return length;
   }
   else
   {
-    // printf("exiting inode_build \nsectors: %d\nlength: %d\n", sectors, length - sectors * BLOCK_SECTOR_SIZE);
     return length - sectors * BLOCK_SECTOR_SIZE;
   }
 }
@@ -606,7 +598,7 @@ inode_build_indirect(struct inode* inode, unsigned sectors)
   // printf("in indirect level 1 build \n\
         // sectors: %d\n", sectors);
 
-  for (i = 0; i < N_NUMBLOCKS; i++)
+  for (i = 0; i < N_NUMBLOCKS && sectors > 0; i++)
   {
     block_sector_t temp_block;
     free_map_allocate(1, &temp_block);
@@ -642,7 +634,7 @@ inode_build_second_indirect(struct inode* inode, unsigned sectors)
   {
     free_map_allocate(1, &first_level_buf[i]);
     block_sector_t block_buf[N_NUMBLOCKS];
-    for (j = 0; j < N_NUMBLOCKS; j++)
+    for (j = 0; j < N_NUMBLOCKS && sectors > 0; j++)
     {
       block_sector_t temp_block;
       free_map_allocate(1, &temp_block);
