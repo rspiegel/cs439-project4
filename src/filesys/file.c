@@ -45,6 +45,7 @@ file_reopen (struct file *file)
 void
 file_close (struct file *file) 
 {
+  
   if (file != NULL)
     {
       file_allow_write (file);

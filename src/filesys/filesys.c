@@ -51,17 +51,29 @@ filesys_create (const char *name, off_t initial_size)
   struct dir *dir = dir_open_root ();
   bool success = false;
   char* file = filesys_get_file(name);
-  if(!strcmp(file, ".") && !strcmp(file, ".."))
-  { 
-    success = (dir != NULL);
-    success &= free_map_allocate (1, &inode_sector);
-    success &= inode_create (inode_sector, initial_size, false);
-    success &= dir_add (dir, name, inode_sector);
+  // printf("strcmp file: %d\n", strcmp(file, ".")); 
+  if(strcmp(file, ".") )
+  {
+    // ASSERT(0);
+    if(strcmp(file, ".."))
+    { 
+      success = (dir != NULL);
+      // printf("success dir: %d\n", success);
+      success &= free_map_allocate (1, &inode_sector);
+      // printf("success free_map_allocate: %d\n", success);
+      success &= inode_create (inode_sector, initial_size, false);
+      // printf("success inode_create: %d\n", success);
+      success &= dir_add (dir, name, inode_sector);
+      // printf("success dir_add: %d\n", success);
+    }
   }
-  if (!success && inode_sector != 0) 
+
+  if (!success && inode_sector != 0)
+  {
     free_map_release (inode_sector, 1);
+  }
   dir_close (dir);
-  free(file);
+  // free(file);
   return success;
 }
 
@@ -123,8 +135,10 @@ char* filesys_get_file(const char* file_path)
     token = strtok_r(NULL, "/", &ptr);
   }
 
-  char* file[strlen(last_token) + 1];
+  char* file = malloc(strlen(last_token) + 1);
   strlcpy(file, last_token, strlen(last_token) + 1);
+  // printf("FDJFDLFDJSJFSLFSKFJSF %s\n", file);
+
   return file;
 }
 
