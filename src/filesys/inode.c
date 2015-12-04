@@ -55,7 +55,8 @@ struct inode_disk
   block_sector_t ptrs[DIRECT_BLOCKS];
   block_sector_t first_level_sector;  //pointer to indirect_first_level
   block_sector_t second_level_sector; //pointer tp indirect_second_level
-  uint32_t unsed_btyes[113];
+  off_t old_length;
+  uint32_t unsed_btyes[112];
 };
 
 struct inode *inode_new(struct inode_disk*, struct inode*);
@@ -93,6 +94,13 @@ byte_to_sector (const struct inode *inode, off_t pos)
 
   ASSERT (inode != NULL);
 
+  // printf("direct blocks allocated...\n");
+  // size_t i;
+  // for(i = 0; i < 10; i++)
+  // {
+  //   printf("%d ", inode->data.ptrs[i]);
+  // }
+  // printf("\n");
   // printf("length: %d\npos: %d\n", inode->data.length, pos);
   if (pos <= inode->data.length /*&& inode->data.length < MAX_FILE*/)
   {
@@ -116,7 +124,7 @@ byte_to_sector (const struct inode *inode, off_t pos)
 
 /*      printf("in indirect level 1 byte_to_sector \n\
         pos: %d\nindex: %d\nbuffer[index]: %d\n\n\n", pos, index, buffer[index]);*/
-
+      // printf("index: %d\n", buffer[index]);
       return buffer[index];
     }
     else
@@ -138,7 +146,7 @@ byte_to_sector (const struct inode *inode, off_t pos)
         pos: %d\nindex: %d\nindex_sec1: %d\nindex_sec: %d\n\
         second_buffer[index_sec1]: %d\n\
         buffer[index_sec]: %d\n\n", pos, index, index_sec1, index_sec, second_buffer[index_sec1], buffer[index_sec]);*/
-
+      // printf("index_sec: %d\n", index_sec);
       return buffer[index_sec];
     }
   }
@@ -198,6 +206,7 @@ inode_create (block_sector_t sector, off_t length, bool dir)
 
     i_new->dir = dir;
     i_new->parent = ROOT_DIR_SECTOR;
+    i_new->data.old_length = 0;
 
     // printf("inode_create just made the inode... \nlength: %d\n", inode_length(i_new));
     if (i_new != NULL)
@@ -409,6 +418,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
 
   if (inode->deny_write_cnt)
     return 0;
+  int i=0;
   while (size > 0) 
   {
     /* Sector to write, starting byte offset within sector. */
@@ -416,6 +426,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
     // printf("inode->data.ptrs[0]: %d\n", inode->data.ptrs[0]);
     //block_sector_t sector_idx = byte_to_sector (inode, inode_length(inode),  offset);
     block_sector_t sector_idx = byte_to_sector (inode, offset);
+    // printf("\t%d\n",sector_idx);
     // printf("in inode_write_at...\n");
     // printf("sector_idx: \t%d\ninode_length: \t\t%d\n\n\n", sector_idx, inode_length(inode));
     int sector_ofs = offset % BLOCK_SECTOR_SIZE;
@@ -431,11 +442,13 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
 
     /* Number of bytes to actually write into this sector. */
     int chunk_size = size < min_left ? size : min_left;
+    // printf("%d\t%d\n",i++,chunk_size);
     // printf("size: %d\nmin_left: %d\n", size, min_left);
     // printf("chunk_size: %d\n", chunk_size);
     if (chunk_size <= 0)
     {
-      inode->data.length = size;
+      inode->data.old_length = inode->data.length;
+      inode->data.length += size;
       inode = inode_new(&inode->data, inode);
       // break;
     }
@@ -443,7 +456,6 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
     if (sector_ofs == 0 && chunk_size == BLOCK_SECTOR_SIZE)
       {
         /* Write full sector directly to disk. */
-        
         block_write (fs_device, sector_idx, buffer + bytes_written);
       }
     else 
@@ -524,6 +536,7 @@ inode_new(struct inode_disk *inode_d, struct inode* inode)
   }
   else
   {
+    // printf("here\n");
     inode->data.length = inode_build(inode, inode_d->length);
     return inode;
   }
@@ -540,36 +553,36 @@ inode_build(struct inode* inode, off_t length)
   {
     zeros[i++] = 0;
   }
-
+  int old_sectors = (int)bytes_to_sectors(inode->data.old_length);
   int sectors = (int)bytes_to_sectors(length);
   //ASSERT(sectors); // sectors should never be zero
+  // printf("bytes to sectors: %d\n", bytes_to_sectors(inode->data.old_length));
+  // printf("old_sectors: %d\n", old_sectors);
 
-  for (i = 0; i < DIRECT_BLOCKS && sectors > 0; i++)
+  for (i = old_sectors; i < DIRECT_BLOCKS && sectors > 0; i++)
   {
     free_map_allocate(1, &inode->data.ptrs[i]);
     block_write(fs_device, inode->data.ptrs[i], zeros);
     sectors--;
   }
 
-  // printf("length: %d\nsectors: %d\n", length, sectors);
-  if (sectors <= 0) 
+  if (sectors - old_sectors <= 0)
+    return length;
+
+  if(old_sectors - DIRECT_BLOCKS < N_NUMBLOCKS) // if sectors remaining, move on to first_level
+  {
+    sectors = inode_build_indirect(inode, sectors - old_sectors);
+  }
+  if (sectors - old_sectors <= 0) 
   {
     return length;
   }
-  else // if sectors remaining, move on to first_level
+  
+  if(old_sectors - DIRECT_BLOCKS - N_NUMBLOCKS < N_NUMBLOCKS * N_NUMBLOCKS)
   {
-  // ASSERT(0);
-    sectors = inode_build_indirect(inode, sectors);
+    sectors = inode_build_second_indirect(inode, sectors - old_sectors);
   }
-  if (sectors <= 0) 
-  {
-    return length;
-  }
-  else // if sectors remaining, move on to second_level
-  {
-    sectors = inode_build_second_indirect(inode, sectors);
-  }
-  if (sectors <= 0) 
+  if (sectors - old_sectors<= 0) 
   {
     return length;
   }
@@ -592,17 +605,14 @@ inode_build_indirect(struct inode* inode, unsigned sectors)
   }
 
   free_map_allocate(1, &inode->data.first_level_sector);
-  block_sector_t block_buf[N_NUMBLOCKS];
-  //printf("%d\n", inode->data.first_level_sector);
-
-  // printf("in indirect level 1 build \n\
-        // sectors: %d\n", sectors);
-
-  for (i = 0; i < N_NUMBLOCKS && sectors > 0; i++)
+  block_sector_t block_buf[N_NUMBLOCKS] = {0};
+  // printf("bytes to sectors: %d\n", bytes_to_sectors(inode->data.old_length));
+  for (i = bytes_to_sectors(inode->data.old_length) - DIRECT_BLOCKS; i < N_NUMBLOCKS && sectors > 0; i++)
   {
     block_sector_t temp_block;
     free_map_allocate(1, &temp_block);
     block_write(fs_device, temp_block, zeros);
+    // printf("temp_block: %d\n", temp_block);
     block_buf[i] = temp_block;
     sectors--;
   }
@@ -616,6 +626,7 @@ inode_build_second_indirect(struct inode* inode, unsigned sectors)
 {
   // printf("enter inode_build_second_indirect\n");
 
+  // printf("bytes to sectors: %d\n", bytes_to_sectors(inode->data.old_length));
   char zeros[BLOCK_SECTOR_SIZE];
   int i, j;
   i = 0;
@@ -630,11 +641,12 @@ inode_build_second_indirect(struct inode* inode, unsigned sectors)
   free_map_allocate(1, &inode->data.second_level_sector);
   block_sector_t first_level_buf[N_NUMBLOCKS];
   //printf("%d\n", inode->data.second_level_sector);
-  for (i = 0; i < N_NUMBLOCKS; i++)
+  for (i = sectors / N_NUMBLOCKS; i < N_NUMBLOCKS; i++)
   {
     free_map_allocate(1, &first_level_buf[i]);
     block_sector_t block_buf[N_NUMBLOCKS];
-    for (j = 0; j < N_NUMBLOCKS && sectors > 0; j++)
+    memset(block_buf, 0, N_NUMBLOCKS);
+    for (j = sectors % N_NUMBLOCKS; j < N_NUMBLOCKS && sectors > 0; j++)
     {
       block_sector_t temp_block;
       free_map_allocate(1, &temp_block);
